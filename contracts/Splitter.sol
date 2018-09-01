@@ -1,62 +1,68 @@
 pragma solidity ^0.4.24;
 
 contract Splitter {
-    event FundsReceived(uint amount); 
-    event FundsClaimed(address indexed party, uint amount); 
-    
-    address owner;
-    address partyA;
-    address partyB;
-    uint percentageA;
-    uint percentageB;
-    uint receivedFunds;
-    uint remainingAFunds;
-    uint remainingBFunds;
-    uint claimedAFunds;
-    uint claimedBFunds;
-    
-    modifier onlyOwner() { 
-        require(msg.sender == owner);    
+    event Deposit(uint amount);
+    event Withdrawal(address indexed party, uint amount);
+
+    address public owner;
+    address public partyA;
+    address public partyB;
+    uint public receivedFunds;
+    uint public remainingAFunds;
+    uint public remainingBFunds;
+
+    modifier onlyOwner() {
+        require(msg.sender == owner);
         _;
     }
 
-    constructor(address _partyA, uint _percentageA, address _partyB, uint _percentageB) public {
+    modifier onlyOneParty() {
+        require(msg.sender == partyA || msg.sender == partyB);
+        _;
+    }
+
+    constructor(address _partyA, address _partyB) public {
         require(_partyA != address(0), "partyA must be a valid address");
         require(_partyB != address(0), "partyB must be a valid address");
-        require(_percentageA < 100, "percentageB must be less than 100");
-        require(_percentageB < 100, "percentageB must be less than 100");
-        require(_percentageA + _percentageB == 100, "percentageA + percentageB must be equal to 100");
-        
+
         owner = msg.sender;
         partyA = _partyA;
         partyB = _partyB;
-        percentageA = _percentageA;
-        percentageB = _percentageB;
     }
-    
-    function() public payable onlyOwner {   // onlyOwner assure fairness
-        uint aPart = msg.value * percentageA / 100;
+
+    function deposit() public payable onlyOwner {   // onlyOwner assure fair play
+        uint aPart = msg.value / 2;
         uint bPart = msg.value - aPart;
         assert(aPart + bPart == msg.value);
         remainingAFunds += aPart;
         remainingBFunds += bPart;
         receivedFunds += msg.value;
-        emit FundsReceived(msg.value);
+        emit Deposit(msg.value);
     }
-    
-    function claimFundsForA() public {      // no need to restrict access
-        require(remainingAFunds != 0, "no remaining funds for party A");
-        uint fundsToSend = remainingAFunds;
-        remainingAFunds = 0;
-        partyA.transfer(fundsToSend);
-        emit FundsClaimed(partyA, fundsToSend);
+
+    function() public payable onlyOwner {   // onlyOwner assure fair play
+        deposit();
     }
-    
-    function claimFundsForB() public {
-        require(remainingBFunds != 0, "no remaining funds for party B");
-        uint fundsToSend = remainingBFunds;
-        remainingBFunds = 0;
-        partyB.transfer(fundsToSend);
-        emit FundsClaimed(partyB, fundsToSend);
+
+    function withdraw() public onlyOneParty {
+        uint presentFunds = remainingAFunds+remainingBFunds;
+        require(presentFunds != 0, "no remaining funds to withdraw");
+
+        uint amount = 0;
+        if (msg.sender == partyA) {
+            amount = remainingAFunds;
+            remainingAFunds = 0;
+        }
+        else {
+            assert(msg.sender == partyB);   // assured by onlyOneParty modifier
+
+            amount = remainingBFunds;
+            remainingBFunds = 0;
+        }
+
+        assert(remainingAFunds + remainingBFunds + amount == presentFunds);     // invariant
+
+        msg.sender.transfer(amount);
+        emit Withdrawal(msg.sender, amount);
     }
 }
