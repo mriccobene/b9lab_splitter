@@ -44,7 +44,7 @@ contract("Splitter", function(accounts) {
     describe("#fallback function", async function() {
         it("should consume <= 2300 gas", async function() {
             let tx =  await instance.sendTransaction({from: owner, gas: MAX_GAS, value: 1*10**18});
-             assert(tx.receipt.gasUsed <= 2300, `fallback function use ${tx.receipt.gasUsed}`);
+            assert(tx.receipt.gasUsed <= 2300, `fallback function use ${tx.receipt.gasUsed}`);
         });
 
         // TODO
