@@ -32,7 +32,11 @@ contract Splitter {
     }
 
     function remainingFunds() public view returns (uint) {
-        return remainingAFunds + remainingBFunds + unsplittedFunds;
+        return address(this).balance;
+    }
+
+    function unsplittedFunds() public view returns (uint) {
+        return address(this).balance - (remainingAFunds + remainingBFunds);
     }
 
     function receivedFunds() public view returns (uint) {
@@ -40,23 +44,25 @@ contract Splitter {
     }
 
     function deposit() public payable onlyOwner {   // onlyOwner assure fair play
-        unsplittedFunds += msg.value;               // minimum gas usage
-        emit Deposit(msg.value);
+        emit Deposit(msg.value);                    // minimum gas usage
     }
 
-    function() public payable onlyOwner {   // onlyOwner assure fair play
+    function() public payable onlyOwner {           // onlyOwner assure fair play
         deposit();
     }
 
     function split() internal {
+        uint _unsplittedFunds = this.unsplittedFunds();
         if (unsplittedFunds == 0)
             return;
 
-        uint aPart = unsplittedFunds / 2;
-        uint bPart = unsplittedFunds - aPart;
-        assert(aPart + bPart == unsplittedFunds);
+        uint aPart = _unsplittedFunds / 2;
+        uint bPart = _unsplittedFunds - aPart;
+        assert(aPart + bPart == _unsplittedFunds);
+
         remainingAFunds += aPart;
         remainingBFunds += bPart;
+        assert(this.unsplittedFunds() == 0);
     }
 
     function withdraw() public onlyOneParty {

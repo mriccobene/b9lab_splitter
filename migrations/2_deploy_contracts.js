@@ -34,7 +34,7 @@ module.exports = function(deployer, network, accounts) {
 
         let splitter = await deployer.deploy(Splitter, partyA, partyB, { from: owner, gas: MAX_GAS });
         let receipt = await web3.eth.getTransactionReceipt(splitter.transactionHash);
-        console.log('  Splitter gasUsed: ' + receipt.gasUsed);
+        console.log('  Splitter deployment gasUsed: ' + receipt.gasUsed);
     });
 
 };

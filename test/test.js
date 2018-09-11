@@ -1,5 +1,7 @@
 "use strict";
 
+// >truffle.cmd test ./test/test.js --network net42
+
 const promise = require("bluebird");
 
 // Promisify web3
@@ -43,8 +45,16 @@ contract("Splitter", function(accounts) {
 
     describe("#fallback function", async function() {
         it("should consume <= 2300 gas", async function() {
+
+            // from Yellow paper
+            const Gtx = 21000;          // tx cost
+            const GcallStipend = 2300;  // exec cost
+            const SEND_TX_GAS = Gtx + GcallStipend;
+            const TX_SUCCESS = "0x1";
+
             let tx =  await instance.sendTransaction({from: owner, gas: MAX_GAS, value: 1*10**18});
-            assert(tx.receipt.gasUsed <= 2300, `fallback function use ${tx.receipt.gasUsed}`);
+            console.log("      Splitter fallback function gasUsed:",tx.receipt.gasUsed);
+            assert(tx.receipt.gasUsed <= SEND_TX_GAS, `fallback function use ${tx.receipt.gasUsed}`);
         });
 
         // TODO
