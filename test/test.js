@@ -14,6 +14,16 @@ if (typeof web3.version.getNodePromise !== "function") {
 
 const Splitter = artifacts.require("Splitter");
 
+async function txCost(txReceipt) {
+    let txDetails = await web3.eth.getTransaction(txReceipt.transactionHash);
+    //console.log(txDetails);
+
+    let txCost = txDetails.gasPrice.mul(txReceipt.gasUsed);
+    //console.log(txCost);
+
+    return txCost;
+}
+
 // Test
 contract("Splitter", function(accounts) {
     const MAX_GAS = 4700000;
@@ -58,6 +68,31 @@ contract("Splitter", function(accounts) {
         });
 
         // TODO
+    });
+
+    describe("#withdraw function", async function() {
+        it("should split funds correctly", async function() {
+            let funds = 3 * 10 ** 18;
+            let user1BalanceStart = await web3.eth.getBalance(user1);
+            let user2BalanceStart = await web3.eth.getBalance(user2);
+
+            await instance.sendTransaction({from: owner, gas: MAX_GAS, value: funds});
+            let tx = await instance.withdraw({from: user1, gas: MAX_GAS});
+            let withdrawCost = await txCost(tx.receipt);
+
+            let user1BalanceEnd = await web3.eth.getBalance(user1);
+            let user2BalanceEnd = await web3.eth.getBalance(user2);
+            let user1RemainingFunds = await instance.remainingAFunds();
+            let user2RemainingFunds = await instance.remainingBFunds();
+
+            let user1BalanceEnd_estimated = user1BalanceStart.add(funds / 2).sub(withdrawCost);
+
+            assert(user1BalanceEnd.toString() == user1BalanceEnd_estimated.toString(), "user1 end balance doesn't match");
+            assert(user2BalanceEnd.toString() == user2BalanceStart.toString(), "user2 end balance doesn't match");
+
+            assert(user1RemainingFunds == 0, "user1 remaining funds are not zero");
+            assert(user2RemainingFunds == funds / 2, "user2 remaining funds are not correct");
+        });
     });
 
     // TODO

@@ -53,7 +53,7 @@ contract Splitter {
 
     function split() internal {
         uint _unsplittedFunds = this.unsplittedFunds();
-        if (unsplittedFunds == 0)
+        if (_unsplittedFunds == 0)
             return;
 
         uint aPart = _unsplittedFunds / 2;
