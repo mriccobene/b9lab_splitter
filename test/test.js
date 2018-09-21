@@ -73,19 +73,19 @@ contract("Splitter", function(accounts) {
     describe("#withdraw function", async function() {
         it("should split funds correctly", async function() {
             let funds = 3 * 10 ** 18;
-            let user1BalanceStart = await web3.eth.getBalance(user1);
-            let user2BalanceStart = await web3.eth.getBalance(user2);
+            const user1BalanceStart = await web3.eth.getBalancePromise(user1);
+            const user2BalanceStart = await web3.eth.getBalancePromise(user2);
 
-            await instance.sendTransaction({from: owner, gas: MAX_GAS, value: funds});
-            let tx = await instance.withdraw({from: user1, gas: MAX_GAS});
-            let withdrawCost = await txCost(tx.receipt);
+            const receipt = await instance.sendTransaction({from: owner, gas: MAX_GAS, value: funds});
+            const tx = await instance.withdraw({from: user1, gas: MAX_GAS});
+            const withdrawCost = await txCost(tx.receipt);
 
-            let user1BalanceEnd = await web3.eth.getBalance(user1);
-            let user2BalanceEnd = await web3.eth.getBalance(user2);
-            let user1RemainingFunds = await instance.remainingAFunds();
-            let user2RemainingFunds = await instance.remainingBFunds();
+            const user1BalanceEnd = await web3.eth.getBalancePromise(user1);
+            const user2BalanceEnd = await web3.eth.getBalancePromise(user2);
+            const user1RemainingFunds = await instance.remainingAFunds();
+            const user2RemainingFunds = await instance.remainingBFunds();
 
-            let user1BalanceEnd_estimated = user1BalanceStart.add(funds / 2).sub(withdrawCost);
+            const user1BalanceEnd_estimated = user1BalanceStart.add(funds / 2).sub(withdrawCost);
 
             assert(user1BalanceEnd.toString() == user1BalanceEnd_estimated.toString(), "user1 end balance doesn't match");
             assert(user2BalanceEnd.toString() == user2BalanceStart.toString(), "user2 end balance doesn't match");

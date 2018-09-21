@@ -76,18 +76,18 @@ contract Splitter {
             amount = remainingAFunds;
             remainingAFunds = 0;
         }
-        else {
-            assert(msg.sender == partyB);   // assured by onlyOneParty modifier
-
+        else if (msg.sender == partyB) {
             amount = remainingBFunds;
             remainingBFunds = 0;
         }
+        else // made impossible by onlyOneParty modifier
+            revert("only an admitted party can withdraw");
 
         withdrawnFunds += amount;
 
         assert(remainingAFunds + remainingBFunds + amount == presentFunds);     // invariant
 
-        msg.sender.transfer(amount);
         emit Withdrawal(msg.sender, amount);
+        msg.sender.transfer(amount);
     }
 }
