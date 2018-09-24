@@ -48,8 +48,7 @@ contract Splitter {
     }
 
     function withdraw() public onlyOneParty {
-        uint presentFunds = remainingAFunds+remainingBFunds();
-        require(presentFunds != 0, "no remaining funds to withdraw");
+        require(remainingFunds() != 0, "no remaining funds to withdraw");
 
         uint amount = 0;
         if (msg.sender == partyA) {
