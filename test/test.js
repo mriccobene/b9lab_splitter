@@ -72,7 +72,7 @@ contract("Splitter", function(accounts) {
 
     describe("#withdraw function", async function() {
         it("should split funds correctly", async function() {
-            let funds = 3 * 10 ** 18;
+            let funds = 0.1 * 10 ** 18;
             const user1BalanceStart = await web3.eth.getBalancePromise(user1);
             const user2BalanceStart = await web3.eth.getBalancePromise(user2);
 
