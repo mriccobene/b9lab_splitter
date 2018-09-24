@@ -54,7 +54,7 @@ contract("Splitter", function(accounts) {
     });
 
     describe("#fallback function", async function() {
-        it("should consume <= 2300 gas", async function() {
+        it.skip("should consume <= 2300 gas", async function() {        // this is no longer a requirement
 
             // from Yellow paper
             const Gtx = 21000;          // tx cost
@@ -63,7 +63,7 @@ contract("Splitter", function(accounts) {
             const TX_SUCCESS = "0x1";
 
             let tx =  await instance.sendTransaction({from: owner, gas: MAX_GAS, value: 1*10**18});
-            console.log("      Splitter fallback function gasUsed:",tx.receipt.gasUsed);
+            console.log("      Splitter fallback function gasUsed:",tx.receipt.gasUsed - Gtx);
             assert(tx.receipt.gasUsed <= SEND_TX_GAS, `fallback function use ${tx.receipt.gasUsed}`);
         });
 
