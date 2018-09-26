@@ -71,12 +71,17 @@ contract("Splitter", function(accounts) {
     });
 
     describe("#withdraw function", async function() {
-        it("should split funds correctly", async function() {
-            let funds = 0.1 * 10 ** 18;
-            const user1BalanceStart = await web3.eth.getBalancePromise(user1);
-            const user2BalanceStart = await web3.eth.getBalancePromise(user2);
+
+        let funds, user1BalanceStart, user2BalanceStart;
+        beforeEach("send funds", async function() {
+            funds = web3.toWei(0.1, "ether");
+            user1BalanceStart = await web3.eth.getBalancePromise(user1);
+            user2BalanceStart = await web3.eth.getBalancePromise(user2);
 
             const receipt = await instance.sendTransaction({from: owner, gas: MAX_GAS, value: funds});
+        });
+
+        it("should split funds correctly", async function() {
             const tx = await instance.withdraw({from: user1, gas: MAX_GAS});
             const withdrawCost = await txCost(tx.receipt);
 
