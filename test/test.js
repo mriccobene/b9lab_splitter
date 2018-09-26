@@ -37,34 +37,28 @@ contract("Splitter", function(accounts) {
     let instance;
     beforeEach("create a new Splitter instance", async function() {
         //let instance = await Splitter.deployed();     // prefer to create a fresh instance before each test
-        instance = await Splitter.new(user1, user2, { from: owner, gas: MAX_GAS });
+        instance = await Splitter.new({ from: owner, gas: MAX_GAS });
     });
 
-    describe("#constructor", async function() {
-        it("should correctly store owner, partyA, partyB (input parameters)", async function() {
-            const _owner = await instance.owner();
-            assert.equal(_owner, owner, "stored owner doesn't match desired one");
-            const partyA = await instance.partyA();
-            assert.equal(partyA, user1, "stored partyA doesn't match desired one");
-            const partyB = await instance.partyB();
-            assert.equal(partyB, user2, "stored partyB doesn't match desired one");
+    describe("#split function", async function() {
+
+        it("should split funds correctly", async function() {
+            let amount = web3.toBigNumber(web3.toWei(0.1, "ether"));
+
+            let tx =  await instance.split(user1, user2, {from: owner, gas: MAX_GAS, value: amount});
+
+            let halfAmount = amount.div(2);
+            let user1AvailableFunds = await instance.funds(user1);
+            let user2AvailableFunds = await instance.funds(user2);
+
+            assert(user1AvailableFunds.toString() == halfAmount.toString(),
+                `available funds for user1 are wrong, expected ${halfAmount}, actual ${user1AvailableFunds}`);
+            assert(user2AvailableFunds.toString() == amount.sub(halfAmount).toString(),
+                `available funds for user2 are wrong, expected ${amount - halfAmount}, actual ${user2AvailableFunds}`);
         });
 
-        // TODO
-    });
+        it.skip("should emit event correctly", async function() {
 
-    describe("#fallback function", async function() {
-        it.skip("should consume <= 2300 gas", async function() {        // this is no longer a requirement
-
-            // from Yellow paper
-            const Gtx = 21000;          // tx cost
-            const GcallStipend = 2300;  // exec cost
-            const SEND_TX_GAS = Gtx + GcallStipend;
-            const TX_SUCCESS = "0x1";
-
-            let tx =  await instance.sendTransaction({from: owner, gas: MAX_GAS, value: 1*10**18});
-            console.log("      Splitter fallback function gasUsed:",tx.receipt.gasUsed - Gtx);
-            assert(tx.receipt.gasUsed <= SEND_TX_GAS, `fallback function use ${tx.receipt.gasUsed}`);
         });
 
         // TODO
@@ -72,31 +66,40 @@ contract("Splitter", function(accounts) {
 
     describe("#withdraw function", async function() {
 
-        let funds, user1BalanceStart, user2BalanceStart;
-        beforeEach("send funds", async function() {
-            funds = web3.toWei(0.1, "ether");
-            user1BalanceStart = await web3.eth.getBalancePromise(user1);
-            user2BalanceStart = await web3.eth.getBalancePromise(user2);
+        let funds, user1InitialBalance, user2InitialBalance;
+        beforeEach("read initial balances and send funds", async function() {
+            funds = web3.toBigNumber(web3.toWei(0.1, "ether")).plus(1);
 
-            const receipt = await instance.sendTransaction({from: owner, gas: MAX_GAS, value: funds});
+            user1InitialBalance = await web3.eth.getBalancePromise(user1);
+            user2InitialBalance = await web3.eth.getBalancePromise(user2);
+
+            let tx = await instance.split(user1, user2, {from: owner, gas: MAX_GAS, value: funds});
         });
 
-        it("should split funds correctly", async function() {
+        it("should transfer funds correctly", async function() {
             const tx = await instance.withdraw({from: user1, gas: MAX_GAS});
             const withdrawCost = await txCost(tx.receipt);
 
-            const user1BalanceEnd = await web3.eth.getBalancePromise(user1);
-            const user2BalanceEnd = await web3.eth.getBalancePromise(user2);
-            const user1RemainingFunds = await instance.remainingAFunds();
-            const user2RemainingFunds = await instance.remainingBFunds();
+            const user1FinalBalance = await web3.eth.getBalancePromise(user1);
+            const user2FinalBalance = await web3.eth.getBalancePromise(user2);
+            const user1RemainingFunds = await instance.funds(user1);
+            const user2RemainingFunds = await instance.funds(user2);
 
-            const user1BalanceEnd_estimated = user1BalanceStart.add(funds / 2).sub(withdrawCost);
+            let halfFunds = funds.dividedToIntegerBy(2);
 
-            assert(user1BalanceEnd.toString() == user1BalanceEnd_estimated.toString(), "user1 end balance doesn't match");
-            assert(user2BalanceEnd.toString() == user2BalanceStart.toString(), "user2 end balance doesn't match");
+            const user1FinalBalance_estimated = user1InitialBalance.add(halfFunds).sub(withdrawCost);
+
+            assert(user1FinalBalance.toString() == user1FinalBalance_estimated.toString(),
+                `user1 end balance doesn't match, expected ${user1FinalBalance_estimated.toString()}, actual ${user1FinalBalance.toString()}`);
+            assert(user2FinalBalance.toString() == user2InitialBalance.toString(),
+                `user2 end balance doesn't match, expected ${user2InitialBalance.toString()}, actual ${user2FinalBalance.toString()}`);
 
             assert(user1RemainingFunds == 0, "user1 remaining funds are not zero");
-            assert(user2RemainingFunds == funds / 2, "user2 remaining funds are not correct");
+            assert(user2RemainingFunds == funds - halfFunds, "user2 remaining funds are wrong");
+        });
+
+        it.skip("should emit event correctly", async function() {
+
         });
     });
 

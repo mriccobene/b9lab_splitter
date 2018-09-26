@@ -1,67 +1,31 @@
 pragma solidity ^0.4.24;
 
 contract Splitter {
-    event Deposit(uint amount);
+    event Deposit(address indexed sender , address indexed partyA, address indexed partyB, uint amount);
     event Withdrawal(address indexed party, uint amount);
 
-    address public owner;
-    address public partyA;
-    address public partyB;
-    uint public remainingAFunds;
+    mapping (address => uint) public funds;
 
-    modifier onlyOwner() {
-        require(msg.sender == owner);
-        _;
+    function split(address partyA, address partyB) payable public {
+        require(partyA != address(0), "partyA must be a valid address");
+        require(partyB != address(0), "partyB must be a valid address");
+        require(msg.value != 0, "no value to split");
+
+        emit Deposit(msg.sender, partyA, partyB, msg.value);
+
+        uint halfAmount = msg.value / 2;
+        funds[partyA] += halfAmount;
+        funds[partyB] += msg.value - halfAmount;    // when amount is odd partyB will got 1 wei plus partyA
     }
 
-    modifier onlyOneParty() {
-        require(msg.sender == partyA || msg.sender == partyB);
-        _;
-    }
+    function withdraw() public {
+        uint availableFunds = funds[msg.sender];
+        require(availableFunds != 0, "party has no available funds to withdraw");
 
-    constructor(address _partyA, address _partyB) public {
-        require(_partyA != address(0), "partyA must be a valid address");
-        require(_partyB != address(0), "partyB must be a valid address");
+        funds[msg.sender] = 0;
 
-        owner = msg.sender;
-        partyA = _partyA;
-        partyB = _partyB;
+        emit Withdrawal(msg.sender, availableFunds);
 
-        assert(remainingFunds() == 0);              // prevents creation with funds
-    }
-
-    function remainingFunds() public view returns (uint) {
-        return address(this).balance;
-    }
-
-    function remainingBFunds() public view returns (uint) {
-        return address(this).balance - remainingAFunds;
-    }
-
-    function deposit() public payable onlyOwner {   // onlyOwner assures fair play
-        remainingAFunds += msg.value / 2;
-        emit Deposit(msg.value);                    // minimum gas usage
-    }
-
-    function() public payable onlyOwner {           // onlyOwner assures fair play
-        deposit();
-    }
-
-    function withdraw() public onlyOneParty {
-        require(remainingFunds() != 0, "no remaining funds to withdraw");
-
-        uint amount = 0;
-        if (msg.sender == partyA) {
-            amount = remainingAFunds;
-            remainingAFunds = 0;
-        }
-        else if (msg.sender == partyB) {
-            amount = remainingBFunds();
-        }
-        else // made impossible by onlyOneParty modifier
-            revert("only an admitted party can withdraw");
-
-        emit Withdrawal(msg.sender, amount);
-        msg.sender.transfer(amount);
+        msg.sender.transfer(availableFunds);
     }
 }
