@@ -57,11 +57,23 @@ contract("Splitter", function(accounts) {
                 `available funds for user2 are wrong, expected ${amount - halfAmount}, actual ${user2AvailableFunds}`);
         });
 
-        it.skip("should emit event correctly", async function() {
+        it("should emit event correctly", async function() {
 
+            let amount = web3.toBigNumber(web3.toWei(0.1, "ether"));
+
+            let tx =  await instance.split(user1, user2, {from: owner, gas: MAX_GAS, value: amount});
+
+            assert.equal(tx.logs.length, 1);
+
+            let eventLog = tx.logs[0];
+
+            assert.equal(eventLog.event, 'LogDeposited');
+            assert.equal(eventLog.args.sender, owner);
+            assert.equal(eventLog.args.partyA, user1);
+            assert.equal(eventLog.args.partyB, user2);
+            assert.equal(eventLog.args.amount.toString(), amount.toString());
         });
 
-        // TODO
     });
 
     describe("#withdraw function", async function() {
@@ -94,14 +106,27 @@ contract("Splitter", function(accounts) {
             assert(user2FinalBalance.toString() == user2InitialBalance.toString(),
                 `user2 end balance doesn't match, expected ${user2InitialBalance.toString()}, actual ${user2FinalBalance.toString()}`);
 
-            assert(user1RemainingFunds == 0, "user1 remaining funds are not zero");
-            assert(user2RemainingFunds == funds - halfFunds, "user2 remaining funds are wrong");
+            const user2RemainingFunds_estimated = funds.sub(halfFunds);
+
+            assert(user1RemainingFunds.toString() == "0", "user1 remaining funds are not zero");
+            assert(user2RemainingFunds.toString() == user2RemainingFunds_estimated.toString(), "user2 remaining funds are wrong");
         });
 
-        it.skip("should emit event correctly", async function() {
+        it("should emit event correctly", async function() {
+            const tx = await instance.withdraw({from: user1, gas: MAX_GAS});
+            const withdrawCost = await txCost(tx.receipt);
 
+            const user1FinalBalance = await web3.eth.getBalancePromise(user1);
+            const amount = user1FinalBalance.sub(user1InitialBalance).add(withdrawCost);
+
+            assert.equal(tx.logs.length, 1);
+
+            let eventLog = tx.logs[0];
+
+            assert.equal(eventLog.event, 'LogWithdrawn');
+            assert.equal(eventLog.args.party, user1);
+            assert.equal(eventLog.args.amount.toString(), amount.toString());
         });
     });
 
-    // TODO
 });
