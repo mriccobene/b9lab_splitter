@@ -63,15 +63,25 @@ contract("Splitter", function(accounts) {
 
             let tx =  await instance.split(user1, user2, {from: owner, gas: MAX_GAS, value: amount});
 
-            assert.equal(tx.logs.length, 1);
+            //assert.equal(tx.logs.length, 1);    // can fail for extra events
+            assert.equal(tx.receipt.logs.length, 1);
 
-            let eventLog = tx.logs[0];
+            let rawEventLog = tx.receipt.logs[0];
+
+            assert.equal(rawEventLog.topics.length, 4);
+            assert.equal(rawEventLog.topics[0], web3.sha3("LogDeposited(address,address,address,uint256)"));
+
+            //using formatted logs...
+
+            //let eventLog = tx.logs[0];
+            let eventLog = instance.LogDeposited().formatter(rawEventLog);
 
             assert.equal(eventLog.event, 'LogDeposited');
             assert.equal(eventLog.args.sender, owner);
             assert.equal(eventLog.args.partyA, user1);
             assert.equal(eventLog.args.partyB, user2);
             assert.equal(eventLog.args.amount.toString(), amount.toString());
+
         });
 
     });
@@ -94,8 +104,6 @@ contract("Splitter", function(accounts) {
 
             const user1FinalBalance = await web3.eth.getBalancePromise(user1);
             const user2FinalBalance = await web3.eth.getBalancePromise(user2);
-            const user1RemainingFunds = await instance.funds(user1);
-            const user2RemainingFunds = await instance.funds(user2);
 
             let halfFunds = funds.dividedToIntegerBy(2);
 
@@ -105,6 +113,9 @@ contract("Splitter", function(accounts) {
                 `user1 end balance doesn't match, expected ${user1FinalBalance_estimated.toString()}, actual ${user1FinalBalance.toString()}`);
             assert(user2FinalBalance.toString() == user2InitialBalance.toString(),
                 `user2 end balance doesn't match, expected ${user2InitialBalance.toString()}, actual ${user2FinalBalance.toString()}`);
+
+            const user1RemainingFunds = await instance.funds(user1);
+            const user2RemainingFunds = await instance.funds(user2);
 
             const user2RemainingFunds_estimated = funds.sub(halfFunds);
 
@@ -116,16 +127,13 @@ contract("Splitter", function(accounts) {
             const tx = await instance.withdraw({from: user1, gas: MAX_GAS});
             const withdrawCost = await txCost(tx.receipt);
 
-            const user1FinalBalance = await web3.eth.getBalancePromise(user1);
-            const amount = user1FinalBalance.sub(user1InitialBalance).add(withdrawCost);
-
             assert.equal(tx.logs.length, 1);
 
             let eventLog = tx.logs[0];
 
             assert.equal(eventLog.event, 'LogWithdrawn');
             assert.equal(eventLog.args.party, user1);
-            assert.equal(eventLog.args.amount.toString(), amount.toString());
+            assert.equal(eventLog.args.amount.toString(), funds.dividedToIntegerBy(2).toString(10));
         });
     });
 
