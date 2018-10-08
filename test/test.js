@@ -63,24 +63,24 @@ contract("Splitter", function(accounts) {
 
             let tx =  await instance.split(user1, user2, {from: owner, gas: MAX_GAS, value: amount});
 
-            //assert.equal(tx.logs.length, 1);    // can fail for extra events
-            assert.equal(tx.receipt.logs.length, 1);
+            //assert.equal(tx.logs.length, 1);        // recognized & formatted events
+            assert.equal(tx.receipt.logs.length, 1);  // raw events, can fail if our code triggers external code and this code emits events
 
-            let rawEventLog = tx.receipt.logs[0];
+            let rawEvent = tx.receipt.logs[0];
 
-            assert.equal(rawEventLog.topics.length, 4);
-            assert.equal(rawEventLog.topics[0], web3.sha3("LogDeposited(address,address,address,uint256)"));
+            assert.equal(rawEvent.topics.length, 4);
+            assert.equal(rawEvent.topics[0], web3.sha3("LogDeposited(address,address,address,uint256)"));
 
             //using formatted logs...
+            let depositedEvent = instance.LogDeposited().formatter(rawEvent);
+            // we have tested that tx.receipt.logs.length == 1, so here is safe to use also:
+            // let eventLog = tx.logs[0];
 
-            //let eventLog = tx.logs[0];
-            let eventLog = instance.LogDeposited().formatter(rawEventLog);
-
-            assert.equal(eventLog.event, 'LogDeposited');
-            assert.equal(eventLog.args.sender, owner);
-            assert.equal(eventLog.args.partyA, user1);
-            assert.equal(eventLog.args.partyB, user2);
-            assert.equal(eventLog.args.amount.toString(), amount.toString());
+            assert.equal(depositedEvent.event, 'LogDeposited');
+            assert.equal(depositedEvent.args.sender, owner);
+            assert.equal(depositedEvent.args.partyA, user1);
+            assert.equal(depositedEvent.args.partyB, user2);
+            assert.equal(depositedEvent.args.amount.toString(), amount.toString());
 
         });
 
