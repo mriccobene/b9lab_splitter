@@ -12,17 +12,10 @@ if (typeof web3.version.getNodePromise !== "function") {
     promise.promisifyAll(web3.version, { suffix: "Promise" });
 }
 
+const txCost = require("../utils/txCost");
+
 const Splitter = artifacts.require("Splitter");
 
-async function txCost(txReceipt) {
-    let txDetails = await web3.eth.getTransaction(txReceipt.transactionHash);
-    //console.log(txDetails);
-
-    let txCost = txDetails.gasPrice.mul(txReceipt.gasUsed);
-    //console.log(txCost);
-
-    return txCost;
-}
 
 // Test
 contract("Splitter", function(accounts) {

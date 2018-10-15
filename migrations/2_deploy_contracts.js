@@ -1,4 +1,4 @@
-const Splitter = artifacts.require("Splitter.sol");
+const Splitter = artifacts.require("Splitter");
 
 module.exports = function(deployer, network, accounts) {
     const MAX_GAS = 4700000;
