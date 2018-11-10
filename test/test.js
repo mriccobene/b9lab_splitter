@@ -56,8 +56,10 @@ contract("Splitter", function(accounts) {
 
             let tx =  await instance.split(user1, user2, {from: owner, gas: MAX_GAS, value: amount});
 
-            //assert.equal(tx.logs.length, 1);        // recognized & formatted events
-            assert.equal(tx.receipt.logs.length, 1);  // raw events, can fail if our code triggers external code and this code emits events
+            assert.equal(tx.logs.length, 1);          // recognized & formatted events
+            assert.equal(tx.receipt.logs.length, 1);  // raw events
+            // notes: tx.receipt.logs & tx.logs can contain extra events if our code triggers external code and this code emits events, here we want to assure there are no extra events
+
 
             let rawEvent = tx.receipt.logs[0];
 
