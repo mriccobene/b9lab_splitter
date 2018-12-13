@@ -58,7 +58,7 @@ contract("Splitter", function(accounts) {
 
             assert.equal(tx.logs.length, 1);          // recognized & formatted events
             assert.equal(tx.receipt.logs.length, 1);  // raw events
-            // notes: tx.receipt.logs & tx.logs can contain extra events if our code triggers external code and this code emits events, here we want to assure there are no extra events
+            // notes: tx.logs can contain extra events if our code triggers external code and this code emits events, here we want to assure there are no extra events
 
 
             let rawEvent = tx.receipt.logs[0];
